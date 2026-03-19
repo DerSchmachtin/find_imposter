@@ -5,22 +5,24 @@ const timerElement = document.getElementById('timer');
 // --- DYNAMISCHES SETUP ---
 function calculateNumFaces() {
     const area = window.innerWidth * window.innerHeight;
-    // Ein Gesicht pro 25.000 Pixel (Wert anpassen für mehr/weniger Dichte)
-    // Auf einem iPhone (ca. 400.000 px) wären das ~16 Gesichter
-    // Auf einem Full-HD Monitor (ca. 2.000.000 px) wären das ~80 Gesichter
     const density = 25000; 
     let count = Math.floor(area / density);
-    
-    // Limits setzen, damit es nicht zu extrem wird
     return Math.min(Math.max(count, 15), 120); 
 }
+
+// --- DIFFICULTY SETUP ---
+let baseSpeed = 3;         
+let maxSpeed = 15;        
+let currentDifficulty = 1; 
+
+let baseSize = 80;         
+let minSize = 45;          
 
 let numFaces = calculateNumFaces();
 let score = 0;
 let timeLeft = 30;
 let gameActive = true;
 
-// Deine Bilder-Listen bleiben gleich
 const meineBilder = Array.from({length: 783}, (_, i) => `Martin/Martin_${i+1}.png`);
 const chrisBilder = Array.from({length: 304}, (_, i) => `Chris/Chris_${i+1}.png`);
 
@@ -30,16 +32,18 @@ function createFace(isChris) {
     const faceObj = {
         isChris: isChris,
         element: document.createElement('img'),
-        x: Math.random() * (window.innerWidth - 80),
-        y: Math.random() * (window.innerHeight - 80),
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8
+        x: Math.random() * (window.innerWidth - baseSize),
+        y: Math.random() * (window.innerHeight - baseSize),
+        vx: (Math.random() - 0.5) * 2 * baseSpeed,
+        vy: (Math.random() - 0.5) * 2 * baseSpeed
     };
 
     faceObj.element.className = 'face';
-    // Zufälliges Bild aus der jeweiligen Liste wählen
     const bildeAuswahl = isChris ? chrisBilder : meineBilder;
     faceObj.element.src = `extracted_faces/${bildeAuswahl[Math.floor(Math.random() * bildeAuswahl.length)]}`;
+    
+    faceObj.element.style.width = baseSize + 'px';
+    faceObj.element.style.height = baseSize + 'px';
     
     faceObj.element.addEventListener('click', () => handleFaceClick(faceObj));
     container.appendChild(faceObj.element);
@@ -51,19 +55,36 @@ function handleFaceClick(faceObj) {
 
     if (faceObj.isChris) {
         score += 10;
-        timeLeft += 5; // Zeitbonus für Treffer
+        timeLeft += 5; 
         scoreElement.innerText = `Score: ${score}`;
         spawnEffect(faceObj.x, faceObj.y, "✅ +5s");
-        resetPositions(); // Alles neu mischen bei Treffer
+        resetPositions(); 
+        increaseDifficulty(); // Schwierigkeit bei Treffer anpassen
     } else {
         score = Math.max(0, score - 5);
-        timeLeft -= 2; // Strafe für falschen Klick
+        timeLeft -= 2; 
         scoreElement.innerText = `Score: ${score}`;
         spawnEffect(faceObj.x, faceObj.y, "❌ -2s");
+        increaseDifficulty();
     }
 }
 
-// Erzeugt einen kurzen Text-Effekt an der Klick-Stelle
+function increaseDifficulty() {
+    currentDifficulty = 1 + (score / 100); 
+    const speedScale = Math.min(currentDifficulty, 1);
+    const newSize = Math.max(baseSize - (score / 4), minSize);
+
+    faces.forEach(f => {
+        // Geschwindigkeit skalieren (Richtung beibehalten)
+        f.vx = f.vx * speedScale;
+        f.vy = f.vy * speedScale;
+        
+        // Größe anpassen
+        f.element.style.width = newSize + 'px';
+        f.element.style.height = newSize + 'px';
+    });
+}
+
 function spawnEffect(x, y, text) {
     const el = document.createElement('div');
     el.innerText = text;
@@ -72,26 +93,28 @@ function spawnEffect(x, y, text) {
     el.style.top = y + 'px';
     el.style.color = text.includes('✅') ? '#00ff00' : '#ff0000';
     el.style.fontWeight = 'bold';
+    el.style.pointerEvents = 'none'; // Klicks durchlassen
     container.appendChild(el);
     setTimeout(() => el.remove(), 800);
 }
 
 function resetPositions() {
+    const currentWidth = faces[0].element.offsetWidth;
     faces.forEach(f => {
-        f.x = Math.random() * (window.innerWidth - 80);
-        f.y = Math.random() * (window.innerHeight - 80);
-        // Bild auch beim Reset zufällig neu wählen
+        f.x = Math.random() * (window.innerWidth - currentWidth);
+        f.y = Math.random() * (window.innerHeight - currentWidth);
         const bildeAuswahl = f.isChris ? chrisBilder : meineBilder;
         f.element.src = `extracted_faces/${bildeAuswahl[Math.floor(Math.random() * bildeAuswahl.length)]}`;
     });
 }
 
-// Tauscht alle 3 Sekunden ein zufälliges "Ich"-Gesicht gegen ein anderes aus
 function randomSwap() {
     if (!gameActive) return;
     const nonChrisFaces = faces.filter(f => !f.isChris);
     const randomFace = nonChrisFaces[Math.floor(Math.random() * nonChrisFaces.length)];
-    randomFace.element.src = `extracted_faces/${meineBilder[Math.floor(Math.random() * meineBilder.length)]}`;
+    if (randomFace) {
+        randomFace.element.src = `extracted_faces/${meineBilder[Math.floor(Math.random() * meineBilder.length)]}`;
+    }
 }
 
 function update() {
@@ -99,18 +122,35 @@ function update() {
 
     faces.forEach(f => {
         f.x += f.vx; f.y += f.vy;
-        if (f.x + 80 > window.innerWidth || f.x < 0) f.vx *= -1;
-        if (f.y + 80 > window.innerHeight || f.y < 0) f.vy *= -1;
+        
+        const currentWidth = f.element.offsetWidth;
+        const currentHeight = f.element.offsetHeight;
+
+        if (f.x + currentWidth > window.innerWidth || f.x < 0) {
+            f.vx *= -1;
+            f.x = Math.max(0, Math.min(f.x, window.innerWidth - currentWidth));
+        }
+        if (f.y + currentHeight > window.innerHeight || f.y < 0) {
+            f.vy *= -1;
+            f.y = Math.max(0, Math.min(f.y, window.innerHeight - currentHeight));
+        }
+        
         f.element.style.left = f.x + 'px';
         f.element.style.top = f.y + 'px';
     });
     requestAnimationFrame(update);
 }
 
-// Timer Logik
 const timerInterval = setInterval(() => {
     if (!gameActive) return;
     timeLeft--;
+    
+    // Alle 10 Sekunden ein neues Martin-Gesicht für mehr Stress
+    if (timeLeft > 0 && timeLeft % 10 === 0 && faces.length < 120) {
+        createFace(false);
+        increaseDifficulty(); // Neu gespawnte Gesichter an aktuelle Difficulty anpassen
+    }
+
     timerElement.innerText = `Zeit: ${timeLeft}s`;
     if (timeLeft <= 0) {
         gameActive = false;
@@ -121,16 +161,15 @@ const timerInterval = setInterval(() => {
 }, 1000);
 
 window.addEventListener('resize', () => {
-    // Falls das Spiel aktiv ist, korrigieren wir die Positionen der Gesichter,
-    // damit sie nicht außerhalb des neuen Sichtfelds landen.
     faces.forEach(f => {
-        if (f.x + 80 > window.innerWidth) f.x = window.innerWidth - 80;
-        if (f.y + 80 > window.innerHeight) f.y = window.innerHeight - 80;
+        const currentWidth = f.element.offsetWidth;
+        if (f.x + currentWidth > window.innerWidth) f.x = window.innerWidth - currentWidth;
+        if (f.y + currentWidth > window.innerHeight) f.y = window.innerHeight - currentWidth;
     });
 });
 
 // Start
 for (let i = 0; i < numFaces - 1; i++) createFace(false);
-createFace(true); // Der Bruder
-setInterval(randomSwap, 3000); // Alle 3 Sek. Bilder variieren
+createFace(true); 
+setInterval(randomSwap, 3000); 
 update();
