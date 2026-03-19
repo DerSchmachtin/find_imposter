@@ -32,8 +32,8 @@ function createFace(isChris) {
         element: document.createElement('img'),
         x: Math.random() * (window.innerWidth - 80),
         y: Math.random() * (window.innerHeight - 80),
-        vx: (Math.random() - 0.5) * 10,
-        vy: (Math.random() - 0.5) * 10
+        vx: (Math.random() - 0.5) * 8,
+        vy: (Math.random() - 0.5) * 8
     };
 
     faceObj.element.className = 'face';
