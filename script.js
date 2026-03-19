@@ -121,20 +121,44 @@ function update() {
     if (!gameActive) return;
 
     faces.forEach(f => {
-        f.x += f.vx; f.y += f.vy;
+        f.x += f.vx; 
+        f.y += f.vy;
         
         const currentWidth = f.element.offsetWidth;
         const currentHeight = f.element.offsetHeight;
 
+        // --- Kollision Links/Rechts ---
         if (f.x + currentWidth > window.innerWidth || f.x < 0) {
+            // Richtung umkehren
             f.vx *= -1;
-            f.x = Math.max(0, Math.min(f.x, window.innerWidth - currentWidth));
+            // Zufällige Variation der Geschwindigkeit beim Abprall (z.B. +/- 20%)
+            f.vx += (Math.random() - 0.5) * 2; 
+            // Auch die vertikale Geschwindigkeit leicht verändern für "schräge" Abpraller
+            f.vy += (Math.random() - 0.5) * 2;
+            
+            // Verhindern, dass sie im Rand stecken bleiben
+            f.x = f.x < 0 ? 0 : window.innerWidth - currentWidth;
         }
+
+        // --- Kollision Oben/Unten ---
         if (f.y + currentHeight > window.innerHeight || f.y < 0) {
+            // Richtung umkehren
             f.vy *= -1;
-            f.y = Math.max(0, Math.min(f.y, window.innerHeight - currentHeight));
+            // Zufällige Variation
+            f.vy += (Math.random() - 0.5) * 2;
+            f.vx += (Math.random() - 0.5) * 2;
+
+            f.y = f.y < 0 ? 0 : window.innerHeight - currentHeight;
         }
         
+        // --- Speed-Limit (optional, damit sie nicht zu extrem beschleunigen) ---
+        const speed = Math.sqrt(f.vx * f.vx + f.vy * f.vy);
+        const maxLimit = baseSpeed * currentDifficulty * 2;
+        if (speed > maxLimit) {
+            f.vx *= 0.9;
+            f.vy *= 0.9;
+        }
+
         f.element.style.left = f.x + 'px';
         f.element.style.top = f.y + 'px';
     });
