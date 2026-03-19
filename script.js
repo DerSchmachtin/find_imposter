@@ -51,9 +51,9 @@ function handleFaceClick(faceObj) {
 
     if (faceObj.isChris) {
         score += 10;
-        timeLeft += 3; // Zeitbonus für Treffer
+        timeLeft += 5; // Zeitbonus für Treffer
         scoreElement.innerText = `Score: ${score}`;
-        spawnEffect(faceObj.x, faceObj.y, "✅ +10s");
+        spawnEffect(faceObj.x, faceObj.y, "✅ +5s");
         resetPositions(); // Alles neu mischen bei Treffer
     } else {
         score = Math.max(0, score - 5);
@@ -132,5 +132,5 @@ window.addEventListener('resize', () => {
 // Start
 for (let i = 0; i < numFaces - 1; i++) createFace(false);
 createFace(true); // Der Bruder
-setInterval(randomSwap, 1000); // Alle 3 Sek. Bilder variieren
+setInterval(randomSwap, 3000); // Alle 3 Sek. Bilder variieren
 update();
