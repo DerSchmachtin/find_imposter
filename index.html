@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bouncende Gesichter - Finde den Fehler!</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Verhindert Scrollbalken */
+            background-color: #222; /* Dunkler Hintergrund */
+            font-family: sans-serif;
+            color: white;
+            text-align: center;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        .face {
+            position: absolute;
+            width: 80px; /* Größe der Gesichter */
+            height: 80px;
+            cursor: pointer; /* Zeigt, dass man draufklicken kann */
+            transition: transform 0.1s ease; /* Kleine Animation beim Klicken */
+        }
+        .face:active {
+            transform: scale(1.2); /* Vergrößert das Gesicht beim Klicken */
+        }
+        #header {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            pointer-events: none; /* WICHTIG: Klicks ignorieren */
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+    <h1>Finde Chris!</h1>
+    <h2 id="score">Score: 0</h2>
+    <h2 id="timer">Zeit: 30s</h2>
+    </div>
+    <div id="game-container"></div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+.face {
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    cursor: pointer;
+    -webkit-user-drag: none;
+}
+
+/* Für Bildschirme schmaler als 600px (Handys) */
+@media (max-width: 600px) {
+    .face {
+        width: 60px; /* Kleinere Gesichter auf dem Handy */
+        height: 60px;
+    }
+}
