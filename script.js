@@ -20,7 +20,10 @@ const SWAP_EVERY = 3;        // Sekunden zwischen zufaelligem Bildtausch
 const BASE_SPEED = 3;        // Pixel pro Frame bei 60 fps
 const MAX_SPEED = 15;
 const BOUNCE_JITTER = 0.5;   // Radiant Winkelstreuung beim Abprallen
-const DENSITY = 25000;       // Ein Gesicht pro X Bildschirm-Pixel
+const START_DENSITY = 90000; // Ein Start-Gesicht pro X Bildschirm-Pixel
+const START_MIN = 8;         // So wenige Gesichter mindestens am Anfang
+const START_MAX = 18;        // ... und hoechstens, auch auf grossen Monitoren
+const FACES_PER_HIT = 2;     // Pro Treffer kommen so viele Martins dazu
 const BEST_KEY = 'imposter-best-score';
 
 // --- ZUSTAND ---
@@ -40,9 +43,9 @@ let spawnTimer = 0;
 let swapTimer = 0;
 
 // --- DYNAMISCHES SETUP ---
-function calculateNumFaces() {
-    const count = Math.floor((window.innerWidth * window.innerHeight) / DENSITY);
-    return Math.min(Math.max(count, 15), MAX_FACES);
+function calculateStartFaces() {
+    const count = Math.floor((window.innerWidth * window.innerHeight) / START_DENSITY);
+    return Math.min(Math.max(count, START_MIN), START_MAX);
 }
 
 function calculateBaseSize() {
@@ -130,7 +133,7 @@ function createFace(isChris) {
 function buildFaces() {
     faces.forEach(f => f.element.remove());
     faces = [];
-    const count = calculateNumFaces();
+    const count = calculateStartFaces();
     for (let i = 0; i < count - 1; i++) createFace(false);
     createFace(true);
 }
@@ -143,7 +146,10 @@ function handleFaceClick(faceObj) {
         timeLeft += 5;
         spawnEffect(faceObj, '✅ +10 · +5s');
         increaseDifficulty();
-        resetPositions();
+        for (let i = 0; i < FACES_PER_HIT && faces.length < MAX_FACES; i++) {
+            createFace(false);
+        }
+        shuffleFaces();
     } else {
         score = Math.max(0, score - 5);
         timeLeft -= 2;
@@ -175,7 +181,10 @@ function spawnEffect(faceObj, text) {
     setTimeout(() => el.remove(), 800);
 }
 
-function resetPositions() {
+// Nach einem Treffer wird alles neu gewuerfelt: Platz, Bild, Richtung und
+// Tempo. Der speedMultiplier muss mit neu gezogen werden, sonst behaelt jedes
+// Gesicht dauerhaft sein Tempo aus der Startaufstellung.
+function shuffleFaces() {
     const maxX = Math.max(0, window.innerWidth - faceSize);
     const maxY = Math.max(0, window.innerHeight - faceSize);
 
@@ -183,6 +192,7 @@ function resetPositions() {
         f.x = Math.random() * maxX;
         f.y = Math.random() * maxY;
         f.element.src = randomImage(f);
+        f.speedMultiplier = 0.7 + Math.random() * 0.6;
         setDirection(f, Math.random() * Math.PI * 2);
         draw(f);
     });
